@@ -1,0 +1,7 @@
+# Compiled binary (kubectl plugin)
+/kubectl-forwarder
+
+# Go build/test artifacts
+*.exe
+*.test
+*.out
