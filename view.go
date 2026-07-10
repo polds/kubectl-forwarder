@@ -6,6 +6,9 @@ import (
 )
 
 func (m model) View() string {
+	if m.loading {
+		return m.viewLoading()
+	}
 	switch m.view {
 	case viewDashboard:
 		return m.viewDashboard()
@@ -74,6 +77,23 @@ func (m model) viewDashboard() string {
 
 	b.WriteString("\n")
 	b.WriteString(helpStyle.Render("n new  •  r restart  •  d stop  •  ↑/↓ select  •  q quit"))
+	return b.String()
+}
+
+// viewLoading shows an animated spinner while a cluster lookup is in flight, so
+// a slow or unreachable cluster reads as "working", not "hung". If the lookup
+// fails (DNS, unreachable API server, timeout), the error surfaces on the
+// dashboard via errLine once loading clears.
+func (m model) viewLoading() string {
+	var b strings.Builder
+	b.WriteString(titleStyle.Render("kubectl-forwarder"))
+	b.WriteString("\n\n")
+	b.WriteString("  ")
+	b.WriteString(m.spinner.View())
+	b.WriteString(" ")
+	b.WriteString(m.statusLine)
+	b.WriteString("\n\n")
+	b.WriteString(helpStyle.Render("  esc cancel"))
 	return b.String()
 }
 

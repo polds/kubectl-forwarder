@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -40,6 +41,7 @@ type model struct {
 	// wizard scratch state
 	picker         list.Model
 	localInput     textinput.Model
+	spinner        spinner.Model
 	wizardNS       string
 	wizardServices []svc
 	wizardSvc      svc
@@ -59,11 +61,16 @@ func newModel(ref *programRef) model {
 	ti.CharLimit = 5
 	ti.Prompt = "local port: "
 
+	sp := spinner.New()
+	sp.Spinner = spinner.Dot
+	sp.Style = headerStyle
+
 	return model{
 		ref:        ref,
 		view:       viewDashboard,
 		picker:     picker,
 		localInput: ti,
+		spinner:    sp,
 	}
 }
 
@@ -76,7 +83,7 @@ type pickerItem struct {
 }
 
 func (i pickerItem) Title() string       { return i.title }
-func (i pickerItem) Description() string  { return i.desc }
+func (i pickerItem) Description() string { return i.desc }
 func (i pickerItem) FilterValue() string { return i.title }
 
 func (m *model) sizePicker() {
@@ -99,6 +106,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleKey(msg)
 
 	case namespacesLoadedMsg:
+		if !m.loading {
+			return m, nil // user cancelled; drop the stale result
+		}
 		m.loading = false
 		if msg.err != nil {
 			m.view = viewDashboard
@@ -117,6 +127,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case servicesLoadedMsg:
+		if !m.loading {
+			return m, nil // user cancelled; drop the stale result
+		}
 		m.loading = false
 		if msg.err != nil {
 			m.view = viewDashboard
@@ -142,6 +155,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case forwardChangedMsg:
 		return m, nil // snapshot-based render; just trigger a redraw
+
+	case spinner.TickMsg:
+		if !m.loading {
+			return m, nil // stop ticking once the lookup resolves
+		}
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
 	}
 
 	// Delegate to the active widget.
@@ -159,6 +180,18 @@ func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Global quit.
 	if msg.Type == tea.KeyCtrlC {
 		return m, m.quit()
+	}
+
+	// While a cluster lookup is in flight the loading screen owns the keys:
+	// esc abandons it and returns to the dashboard. The pending result is
+	// dropped by the loaded-msg handlers once m.loading is false.
+	if m.loading {
+		if msg.Type == tea.KeyEsc {
+			m.loading = false
+			m.statusLine = ""
+			m.view = viewDashboard
+		}
+		return m, nil
 	}
 
 	switch m.view {
@@ -183,8 +216,8 @@ func (m model) handleDashboardKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "n":
 		m.errLine = ""
 		m.loading = true
-		m.statusLine = "loading namespaces..."
-		return m, loadNamespaces()
+		m.statusLine = "connecting to cluster, loading namespaces…"
+		return m, tea.Batch(loadNamespaces(), m.spinner.Tick)
 	case "up", "k":
 		if m.selected > 0 {
 			m.selected--
@@ -218,8 +251,8 @@ func (m model) handlePickNamespaceKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.wizardNS = it.title
 		m.loading = true
-		m.statusLine = "loading services..."
-		return m, loadServices(it.title)
+		m.statusLine = fmt.Sprintf("looking up services in %s…", it.title)
+		return m, tea.Batch(loadServices(it.title), m.spinner.Tick)
 	}
 	var cmd tea.Cmd
 	m.picker, cmd = m.picker.Update(msg)
@@ -400,13 +433,13 @@ func portSummary(ports []servicePort) string {
 
 // styles
 var (
-	titleStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("15"))
-	helpStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-	errStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
-	headerStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
-	selectedRow  = lipgloss.NewStyle().Foreground(lipgloss.Color("15")).Bold(true)
-	dimRow       = lipgloss.NewStyle().Foreground(lipgloss.Color("250"))
-	logStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	titleStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("15"))
+	helpStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+	errStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
+	headerStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
+	selectedRow = lipgloss.NewStyle().Foreground(lipgloss.Color("15")).Bold(true)
+	dimRow      = lipgloss.NewStyle().Foreground(lipgloss.Color("250"))
+	logStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 )
 
 func statusBadge(s forwardStatus) string {
