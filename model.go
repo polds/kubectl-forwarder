@@ -86,6 +86,31 @@ func (i pickerItem) Title() string       { return i.title }
 func (i pickerItem) Description() string { return i.desc }
 func (i pickerItem) FilterValue() string { return i.title }
 
+// compactDelegate is a single-line list delegate: no description row and no
+// blank spacer between items. Used for the namespace and port pickers, whose
+// items carry no description and so waste vertical space under the default
+// two-line delegate.
+func compactDelegate() list.DefaultDelegate {
+	d := list.NewDefaultDelegate()
+	d.ShowDescription = false
+	d.SetSpacing(0)
+	return d
+}
+
+// twoLineDelegate is the default title+description delegate used by the
+// service picker, tightened to drop the blank spacer between items.
+func twoLineDelegate() list.DefaultDelegate {
+	d := list.NewDefaultDelegate()
+	d.SetSpacing(0)
+	// Indent the port-summary line ~2 cols under its service name. The default
+	// delegate pads titles by 2 (normal/dimmed) and the selected row by 1, so
+	// bump each desc style by 2 over its matching title to keep the offset.
+	d.Styles.NormalDesc = d.Styles.NormalDesc.PaddingLeft(4)
+	d.Styles.SelectedDesc = d.Styles.SelectedDesc.PaddingLeft(3)
+	d.Styles.DimmedDesc = d.Styles.DimmedDesc.PaddingLeft(4)
+	return d
+}
+
 func (m *model) sizePicker() {
 	// Leave room for header and help lines.
 	h := m.height - 4
@@ -119,6 +144,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		for i, ns := range msg.namespaces {
 			items[i] = pickerItem{title: ns}
 		}
+		m.picker.SetDelegate(compactDelegate())
 		m.picker.SetItems(items)
 		m.picker.Title = "Select namespace"
 		m.picker.ResetSelected()
@@ -145,6 +171,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		for i, s := range msg.services {
 			items[i] = pickerItem{title: s.Name, desc: portSummary(s.Ports)}
 		}
+		m.picker.SetDelegate(twoLineDelegate())
 		m.picker.SetItems(items)
 		m.picker.Title = fmt.Sprintf("Select service in %s", msg.namespace)
 		m.picker.ResetSelected()
@@ -289,6 +316,7 @@ func (m model) handlePickServiceKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		for i, p := range m.wizardSvc.Ports {
 			items[i] = pickerItem{title: p.label()}
 		}
+		m.picker.SetDelegate(compactDelegate())
 		m.picker.SetItems(items)
 		m.picker.Title = fmt.Sprintf("Select port on %s", m.wizardSvc.Name)
 		m.picker.ResetSelected()
@@ -433,6 +461,9 @@ func portSummary(ports []servicePort) string {
 
 // styles
 var (
+	// appStyle frames the non-list screens with the same top/left breathing room
+	// the bubbles list gives the picker screens, so every view looks aligned.
+	appStyle    = lipgloss.NewStyle().Padding(1, 2)
 	titleStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("15"))
 	helpStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	errStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))

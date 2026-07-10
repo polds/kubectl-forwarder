@@ -7,15 +7,16 @@ import (
 
 func (m model) View() string {
 	if m.loading {
-		return m.viewLoading()
+		return appStyle.Render(m.viewLoading())
 	}
 	switch m.view {
 	case viewDashboard:
-		return m.viewDashboard()
+		return appStyle.Render(m.viewDashboard())
 	case viewLocalPort:
-		return m.viewLocalPort()
+		return appStyle.Render(m.viewLocalPort())
 	default:
-		// namespace / service / port pickers all render the shared list.
+		// namespace / service / port pickers all render the shared list, which
+		// carries its own padding.
 		return m.picker.View()
 	}
 }
