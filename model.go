@@ -59,6 +59,7 @@ func newModel(ref *programRef) model {
 
 	ti := textinput.New()
 	ti.CharLimit = 5
+	ti.Width = 6
 	ti.Prompt = "› "
 	ti.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("62"))
 	ti.Placeholder = "port"
@@ -478,7 +479,8 @@ var (
 	inputBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("62")).
-			Padding(0, 1)
+			Padding(0, 1).
+			MarginLeft(2)
 	labelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	helpStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	errStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
