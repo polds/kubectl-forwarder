@@ -105,7 +105,9 @@ func (m model) viewLocalPort() string {
 	b.WriteString(fmt.Sprintf("  %s / %s\n", m.wizardNS, m.wizardSvc.Name))
 	b.WriteString(fmt.Sprintf("  remote port: %s\n\n", m.wizardPort.label()))
 	b.WriteString("  ")
-	b.WriteString(m.localInput.View())
+	b.WriteString(labelStyle.Render("Local port"))
+	b.WriteString("\n  ")
+	b.WriteString(inputBoxStyle.Render(m.localInput.View()))
 	b.WriteString("\n")
 	if m.errLine != "" {
 		b.WriteString("\n  ")

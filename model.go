@@ -59,7 +59,9 @@ func newModel(ref *programRef) model {
 
 	ti := textinput.New()
 	ti.CharLimit = 5
-	ti.Prompt = "local port: "
+	ti.Prompt = "› "
+	ti.PromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("62"))
+	ti.Placeholder = "port"
 
 	sp := spinner.New()
 	sp.Spinner = spinner.Dot
@@ -463,8 +465,21 @@ func portSummary(ports []servicePort) string {
 var (
 	// appStyle frames the non-list screens with the same top/left breathing room
 	// the bubbles list gives the picker screens, so every view looks aligned.
-	appStyle    = lipgloss.NewStyle().Padding(1, 2)
-	titleStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("15"))
+	appStyle = lipgloss.NewStyle().Padding(1, 2)
+	// titleStyle is a blue badge matching the bubbles list picker title, so the
+	// dashboard / wizard headers read as headers, not plain bold text.
+	titleStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("15")).
+			Background(lipgloss.Color("62")).
+			Padding(0, 1)
+	// inputBoxStyle frames the local-port field so it reads as an editable form
+	// control rather than a bare line of text.
+	inputBoxStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("62")).
+			Padding(0, 1)
+	labelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	helpStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	errStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
 	headerStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
