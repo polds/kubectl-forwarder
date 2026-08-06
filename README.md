@@ -8,12 +8,56 @@ silently dying after a while.
 
 ## Install
 
+With Go:
+
+```sh
+go install github.com/polds/kubectl-forwarder@latest   # or @v1.2.3 to pin
+```
+
+> `go install` requires a version suffix when you are outside a Go module — the
+> toolchain rejects a bare `go install github.com/polds/kubectl-forwarder` with
+> *"'go install' requires a version when current directory is not in a module"*.
+> That is a toolchain rule, not a packaging gap. Use `@latest` or download a
+> prebuilt archive below.
+
+Or grab a prebuilt binary from the [latest release](https://github.com/polds/kubectl-forwarder/releases/latest)
+(linux and macOS on amd64/arm64, windows on amd64):
+
+```sh
+tar -xzf kubectl-forwarder_<version>_<os>_<arch>.tar.gz
+mv kubectl-forwarder /usr/local/bin/
+```
+
+Every release archive ships with a SLSA build provenance attestation, so you can
+verify it was built by this repo's release workflow before trusting it:
+
+```sh
+gh attestation verify kubectl-forwarder_<version>_<os>_<arch>.tar.gz \
+  --repo polds/kubectl-forwarder
+```
+
+From a checkout:
+
 ```sh
 go build -o kubectl-forwarder .
-# put it on PATH; because the name is kubectl-<x>, kubectl treats it as a plugin:
+```
+
+Put it on PATH; because the name is `kubectl-<x>`, kubectl treats it as a plugin:
+
+```sh
 mv kubectl-forwarder /usr/local/bin/
 kubectl forwarder      # or just: kubectl-forwarder
+kubectl-forwarder --version
 ```
+
+## Releasing
+
+Releases are automated by [Release Please](https://github.com/googleapis/release-please)
+in `.github/workflows/release-please.yml`. Land
+[conventional commits](https://www.conventionalcommits.org) on `main` (`feat:`,
+`fix:`, `feat!:` / `BREAKING CHANGE:`); Release Please keeps an open release PR
+with the next version and the accumulated `CHANGELOG.md`. Merging that PR tags
+the release, publishes the notes, and uploads the attested binaries.
 
 ## Usage
 

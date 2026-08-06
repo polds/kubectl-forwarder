@@ -10,6 +10,14 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "--version", "-version", "version":
+			fmt.Println("kubectl-forwarder", versionString())
+			return
+		}
+	}
+
 	ref := &programRef{}
 	p := tea.NewProgram(newModel(ref), tea.WithAltScreen())
 	ref.p = p // supervisors send messages through this once it exists

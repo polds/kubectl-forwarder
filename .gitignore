@@ -6,5 +6,8 @@
 *.test
 *.out
 
+# Release archives built by .github/workflows/release-please.yml
+/dist/
+
 # OpenWolf
 .wolf/
