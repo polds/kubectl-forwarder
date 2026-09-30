@@ -19,7 +19,6 @@ func TestForwardLive(t *testing.T) {
 	}
 
 	f := &forward{
-		id:        1,
 		namespace: env("FWD_NS", "flux-system"),
 		service:   env("FWD_SVC", "flux-operator"),
 		remote:    env("FWD_REMOTE", "http-web"),
@@ -29,7 +28,7 @@ func TestForwardLive(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go f.run(ctx, func(int) {})
+	go f.run(ctx, func() {})
 
 	// Wait for the supervisor to report the tunnel active.
 	if !waitFor(20*time.Second, func() bool {

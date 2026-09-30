@@ -50,7 +50,6 @@ const (
 // forward is one supervised kubectl port-forward. Fields touched by both the
 // UI goroutine and the supervisor goroutine are guarded by mu.
 type forward struct {
-	id        int
 	namespace string
 	service   string
 	remote    string // service port name or number
@@ -71,7 +70,6 @@ func (f *forward) snapshot() forwardView {
 	logs := make([]string, len(f.logs))
 	copy(logs, f.logs)
 	return forwardView{
-		id:        f.id,
 		namespace: f.namespace,
 		service:   f.service,
 		remote:    f.remote,
@@ -85,7 +83,6 @@ func (f *forward) snapshot() forwardView {
 
 // forwardView is an immutable snapshot for rendering.
 type forwardView struct {
-	id        int
 	namespace string
 	service   string
 	remote    string
@@ -122,11 +119,11 @@ func (f *forward) addLog(line string) {
 }
 
 // forwardChangedMsg tells the UI to re-render; state is read via snapshot.
-type forwardChangedMsg struct{ id int }
+type forwardChangedMsg struct{}
 
 // notifyFunc is called whenever a forward's state changes so the UI can
 // re-render. Decoupling from *tea.Program keeps the supervisor testable.
-type notifyFunc func(id int)
+type notifyFunc func()
 
 // run supervises the forward: (re)start kubectl until the context is cancelled,
 // backing off between failures and resetting once a run stays healthy.
@@ -139,7 +136,7 @@ func (f *forward) run(ctx context.Context, notify notifyFunc) {
 
 		f.setStatus(statusConnecting)
 		f.setErr("")
-		notify(f.id)
+		notify()
 
 		startedAt := time.Now()
 		runErr := f.runOnce(ctx, notify)
@@ -147,7 +144,7 @@ func (f *forward) run(ctx context.Context, notify notifyFunc) {
 
 		if ctx.Err() != nil {
 			f.setStatus(statusStopped)
-			notify(f.id)
+			notify()
 			return
 		}
 
@@ -160,7 +157,7 @@ func (f *forward) run(ctx context.Context, notify notifyFunc) {
 			f.lastErr = "port-forward exited"
 		}
 		f.mu.Unlock()
-		notify(f.id)
+		notify()
 
 		// A run that stayed up a while is a transient drop, not a config
 		// error, so retry promptly instead of climbing the backoff.
@@ -171,7 +168,7 @@ func (f *forward) run(ctx context.Context, notify notifyFunc) {
 		select {
 		case <-ctx.Done():
 			f.setStatus(statusStopped)
-			notify(f.id)
+			notify()
 			return
 		case <-time.After(backoff):
 		}
@@ -239,7 +236,7 @@ func (f *forward) scan(r io.Reader, notify notifyFunc, stdout bool) {
 			f.setStatus(statusActive)
 			f.setErr("")
 		}
-		notify(f.id)
+		notify()
 	}
 }
 
