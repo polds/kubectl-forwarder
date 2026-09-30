@@ -36,7 +36,6 @@ type model struct {
 
 	forwards []*forward
 	selected int // dashboard cursor
-	nextID   int
 
 	// wizard scratch state
 	picker         list.Model
@@ -385,7 +384,6 @@ func (m model) handleLocalPortKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *model) startForward(localPort string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	f := &forward{
-		id:        m.nextID,
 		namespace: m.wizardNS,
 		service:   m.wizardSvc.Name,
 		remote:    m.wizardPort.remote(),
@@ -393,7 +391,6 @@ func (m *model) startForward(localPort string) {
 		cancel:    cancel,
 		status:    statusConnecting,
 	}
-	m.nextID++
 	m.forwards = append(m.forwards, f)
 	m.selected = len(m.forwards) - 1
 	go f.run(ctx, m.notify())
@@ -402,7 +399,7 @@ func (m *model) startForward(localPort string) {
 // notify returns a callback the supervisor uses to request a re-render.
 func (m *model) notify() notifyFunc {
 	ref := m.ref
-	return func(id int) { ref.p.Send(forwardChangedMsg{id}) }
+	return func() { ref.p.Send(forwardChangedMsg{}) }
 }
 
 func (m *model) stopSelected() {
@@ -428,7 +425,6 @@ func (m *model) restartSelected() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	f := &forward{
-		id:        m.nextID,
 		namespace: old.namespace,
 		service:   old.service,
 		remote:    old.remote,
@@ -436,7 +432,6 @@ func (m *model) restartSelected() {
 		cancel:    cancel,
 		status:    statusConnecting,
 	}
-	m.nextID++
 	m.forwards[m.selected] = f
 	go f.run(ctx, m.notify())
 }
@@ -481,7 +476,7 @@ var (
 			BorderForeground(lipgloss.Color("62")).
 			Padding(0, 1).
 			MarginLeft(2)
-	labelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+	labelStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	helpStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	errStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
 	headerStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))

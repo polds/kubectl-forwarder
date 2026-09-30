@@ -19,7 +19,6 @@ func TestForwardRestartsOnDrop(t *testing.T) {
 	}
 
 	f := &forward{
-		id:        1,
 		namespace: env("FWD_NS", "flux-system"),
 		service:   env("FWD_SVC", "flux-operator"),
 		remote:    env("FWD_REMOTE", "http-web"),
@@ -29,7 +28,7 @@ func TestForwardRestartsOnDrop(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go f.run(ctx, func(int) {})
+	go f.run(ctx, func() {})
 
 	if !waitFor(20*time.Second, func() bool { return f.snapshot().status == statusActive }) {
 		t.Fatalf("never became active: %+v", f.snapshot())

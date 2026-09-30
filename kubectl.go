@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
 	"sort"
@@ -134,7 +135,7 @@ func loadServices(namespace string) tea.Cmd {
 // useful than the bare "exit status 1".
 func cmdErr(what string, err error) error {
 	var ee *exec.ExitError
-	if errAs(err, &ee) && len(ee.Stderr) > 0 {
+	if errors.As(err, &ee) && len(ee.Stderr) > 0 {
 		return fmt.Errorf("%s: %s", what, firstLine(ee.Stderr))
 	}
 	return fmt.Errorf("%s: %w", what, err)

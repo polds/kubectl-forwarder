@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 
@@ -27,9 +26,6 @@ func main() {
 		os.Exit(1)
 	}
 }
-
-// errAs is a thin wrapper so kubectl.go can unwrap without importing errors.
-func errAs(err error, target any) bool { return errors.As(err, target) }
 
 // firstLine returns the first non-empty line of stderr bytes, trimmed.
 func firstLine(b []byte) string {
